@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Admin Specific Fixes */
+        body { background: #000; padding: 20px; }
+        .adm-overlay { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; justify-content: center; align-items: center; }
+        .adm-dash { display: none; max-width: 800px; margin: 0 auto; }
+        .tab-btn { margin-right: 10px; }
+    </style>
+</head>
+<body>
+
+    <!-- LOGIN SCREEN -->
+    <div id="login-ui" class="adm-overlay">
+        <div class="auth-box">
+            <h2 style="color:var(--gold);">ADMIN ACCESS</h2>
+            <input type="password" id="a-pass" class="inp" placeholder="Password">
+            <button onclick="adminLogin()" class="btn">LOGIN</button>
+        </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div id="dash-ui" class="adm-dash">
+        
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h2 style="color:var(--gold);">DASHBOARD</h2>
+            <div style="display:flex; gap:10px;">
+                <a href="index.html" target="_blank" class="btn btn-sec" style="padding:8px 15px; text-decoration:none; font-size:12px;">APP VIEW</a>
+                <button onclick="location.reload()" class="btn btn-sec" style="width:auto; padding:8px 15px;">LOGOUT</button>
+            </div>
+        </div>
+
+        <!-- TABS -->
+        <div style="margin-bottom:20px; overflow-x:auto; white-space:nowrap; padding-bottom:5px;">
+            <button class="btn btn-sec" style="width:auto; display:inline-block;" onclick="openTab('users')">Users</button>
+            <button class="btn btn-sec" style="width:auto; display:inline-block;" onclick="openTab('deps')">Deposits</button>
+            <button class="btn btn-sec" style="width:auto; display:inline-block;" onclick="openTab('ords')">Orders</button>
+            <button class="btn btn-sec" style="width:auto; display:inline-block;" onclick="openTab('prods')">Products</button>
+            <button class="btn btn-sec" style="width:auto; display:inline-block;" onclick="openTab('notif')">Notify All</button>
+        </div>
+
+        <!-- 1. USERS (Send Msg Feature) -->
+        <div id="tab-users">
+            <h3 style="color:#fff; margin-bottom:10px;">User Management</h3>
+            <div id="u-list">Loading...</div>
+        </div>
+
+        <!-- 2. DEPOSITS -->
+        <div id="tab-deps" style="display:none;">
+            <h3 style="color:#fff; margin-bottom:10px;">Pending Deposits</h3>
+            <div id="d-list"></div>
+        </div>
+
+        <!-- 3. ORDERS -->
+        <div id="tab-ords" style="display:none;">
+            <h3 style="color:#fff; margin-bottom:10px;">Pending Orders</h3>
+            <div id="o-list"></div>
+        </div>
+
+        <!-- 4. PRODUCTS -->
+        <div id="tab-prods" style="display:none;">
+            <div class="auth-box" style="width:100%; border:1px solid #333; margin-bottom:20px; text-align:left;">
+                <h4 style="color:var(--gold); margin-bottom:10px;">Add Product</h4>
+                <input type="text" id="p-t" class="inp" placeholder="Title">
+                <input type="number" id="p-p" class="inp" placeholder="Price">
+                <input type="text" id="p-i" class="inp" placeholder="Image URL">
+                <input type="text" id="p-d" class="inp" placeholder="Description">
+                <button onclick="addProd()" class="btn">ADD PRODUCT</button>
+            </div>
+            <div id="p-list"></div>
+        </div>
+
+        <!-- 5. NOTIFY ALL -->
+        <div id="tab-notif" style="display:none;">
+            <div class="auth-box" style="width:100%; text-align:left;">
+                <h4 style="color:var(--gold); margin-bottom:10px;">Broadcast Message</h4>
+                <input type="text" id="bc-t" class="inp" placeholder="Title">
+                <input type="text" id="bc-m" class="inp" placeholder="Message">
+                <button onclick="sendBroadcast()" class="btn">SEND TO EVERYONE</button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- MODALS -->
+    <div id="msg-mod" class="overlay" style="display:none;">
+        <div class="box">
+            <span onclick="document.getElementById('msg-mod').style.display='none'" style="float:right; cursor:pointer; color:#fff;">×</span>
+            <h3 style="color:var(--gold);">Send Message</h3>
+            <p style="font-size:12px; color:gray; margin-bottom:10px;">To: <span id="tg-name" style="color:#fff;">User</span></p>
+            <input type="hidden" id="tg-uid">
+            
+            <input type="text" id="m-tit" class="inp" placeholder="Title">
+            <textarea id="m-body" class="inp" rows="3" placeholder="Message"></textarea>
+            <input type="text" id="m-img" class="inp" placeholder="Image URL (Optional)">
+            <input type="text" id="m-lnk" class="inp" placeholder="Link (Optional)">
+            
+            <button onclick="sendPrivate()" class="btn">SEND NOTIFICATION</button>
+        </div>
+    </div>
+
+    <div id="rep-mod" class="overlay" style="display:none;">
+        <div class="box">
+            <span onclick="document.getElementById('rep-mod').style.display='none'" style="float:right; cursor:pointer; color:#fff;">×</span>
+            <h3 style="color:#fff;">Deliver Order</h3>
+            <input type="hidden" id="r-uid"><input type="hidden" id="r-oid">
+            <input type="text" id="r-tit" class="inp" placeholder="Title (e.g. Delivered)">
+            <textarea id="r-msg" class="inp" rows="4" placeholder="Product Key / Credentials"></textarea>
+            <button onclick="deliver()" class="btn">SEND TO USER</button>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <script src="admin.js"></script>
+</body>
+</html>
