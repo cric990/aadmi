@@ -22,7 +22,7 @@ let chatSub = null;
 // 1. AUTHENTICATION
 function adminAuth() {
     const k = document.getElementById('adm-key').value;
-    if(k === "admin123") {
+    if(k === "akku1") {
         document.getElementById('login-overlay').style.display = 'none';
         document.getElementById('admin-dash').style.display = 'block';
         initRealtime();
