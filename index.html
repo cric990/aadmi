@@ -3,159 +3,288 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Premium Store</title>
+    <title>Banty Store | Premium Market</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- FontAwesome Pro Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
 
-    <!-- 1. LOADING SCREEN -->
-    <div id="splash-screen">
-        <div class="loader"></div>
-        <div class="splash-text">BANTY STORE</div>
-    </div>
+    <!-- SOUND ASSETS -->
+    <audio id="snd-success" src="https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3"></audio>
+    <audio id="snd-error" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"></audio>
 
-    <!-- 2. TOAST NOTIFICATION -->
-    <div id="toast" class="toast">
-        <i class="fas fa-bell" style="color:var(--gold); font-size:20px;"></i>
-        <div>
-            <div style="font-weight:bold; font-size:13px; color:#fff;" id="t-head">Notification</div>
-            <div style="font-size:11px; color:#aaa;" id="t-body">Message</div>
+    <!-- LOADING SCREEN -->
+    <div id="loader-overlay">
+        <div class="loader-box">
+            <div class="spinner"></div>
+            <div class="loader-text">BANTY STORE</div>
         </div>
     </div>
 
-    <!-- 3. AUTHENTICATION -->
-    <div id="auth-ui" class="auth-overlay" style="display:none;">
+    <!-- TOAST NOTIFICATION -->
+    <div id="toast-container"></div>
+
+    <!-- AUTHENTICATION SCREEN -->
+    <div id="auth-screen">
         <div class="auth-card">
-            <div class="brand" style="font-size:28px; margin-bottom:10px;">PREMIUM <span style="color:var(--gold)">STORE</span></div>
-            <p style="color:#777; font-size:12px; margin-bottom:20px;">Login to Continue</p>
-            <input type="text" id="u-name" class="inp" placeholder="Username (Min 4 chars)">
-            <input type="password" id="u-pass" class="inp" placeholder="Password (Min 8 chars)">
-            <button onclick="auth()" class="btn">LOGIN / REGISTER</button>
-            <div style="margin-top:15px; font-size:11px; color:#555;">Auto-Account Creation</div>
+            <div class="auth-header">
+                <i class="fas fa-shield-halved logo-icon"></i>
+                <h1>BANTY<span>STORE</span></h1>
+                <p>SECURE DIGITAL ASSETS</p>
+            </div>
+            
+            <div class="input-group">
+                <i class="fas fa-user"></i>
+                <input type="text" id="auth-u" placeholder="Username (Permanent ID)">
+            </div>
+            
+            <div class="input-group">
+                <i class="fas fa-lock"></i>
+                <input type="password" id="auth-p" placeholder="Password">
+            </div>
+
+            <div class="input-group">
+                <i class="fas fa-link"></i>
+                <input type="text" id="auth-ref" placeholder="Referral Code (Optional)">
+            </div>
+
+            <button onclick="handleAuth()" class="btn-primary" id="btn-auth">SECURE LOGIN</button>
+            <p class="terms-text">By joining, you agree to our Terms & Policy.</p>
         </div>
     </div>
 
-    <!-- 4. NOTIFICATION CENTER -->
-    <div id="notif-panel" class="notif-panel">
-        <div class="np-head">
-            <span>ALERTS (24H)</span>
-            <i class="fas fa-times" style="cursor:pointer; color:#fff;" onclick="toggleNotif()"></i>
-        </div>
-        <div id="np-list" class="np-list">
-            <div style="padding:20px; text-align:center; color:#555;">No alerts</div>
-        </div>
-    </div>
-
-    <!-- 5. MAIN APP INTERFACE -->
-    <div id="app-ui" style="display:none;">
+    <!-- MAIN APPLICATION -->
+    <div id="app-screen" style="display: none;">
         
-        <header>
-            <div class="brand" style="font-size:22px;">B<span>S</span></div>
-            <div style="display:flex; gap:15px; align-items:center;">
-                <div class="wallet-pill wallet-chip">
-                    <i class="fas fa-bolt"></i> ₹<span id="u-bal">0</span>
+        <!-- HEADER -->
+        <header class="top-bar">
+            <div class="app-logo">BANTY<span>STORE</span></div>
+            <div class="header-right">
+                <div class="wallet-chip" onclick="nav('wallet')">
+                    <i class="fas fa-wallet"></i>
+                    <span id="h-bal">0</span>
                 </div>
-                <div class="notif-wrapper" onclick="toggleNotif()">
-                    <i class="fas fa-bell bell-icon"></i>
-                    <div id="n-dot" class="n-dot"></div>
+                <div class="notif-btn" onclick="toggleNotif()">
+                    <i class="fas fa-bell"></i>
+                    <span id="n-dot"></span>
                 </div>
             </div>
         </header>
 
-        <!-- PAGE: HOME -->
-        <div id="p-home" class="page active">
-            <div class="section-title">Products</div>
-            <div id="prod-grid" class="grid">
-                <p style="color:gray; padding:20px;">Loading Products...</p>
+        <!-- NOTIFICATION DRAWER -->
+        <div id="notif-panel">
+            <div class="panel-head">
+                <span>Alerts</span>
+                <i class="fas fa-times" onclick="toggleNotif()"></i>
+            </div>
+            <div id="notif-list"></div>
+        </div>
+
+        <!-- POSTER POPUP -->
+        <div id="poster-modal" class="modal-overlay">
+            <div class="poster-card">
+                <div class="poster-close" onclick="closePoster()">×</div>
+                <img id="poster-img" src="" alt="Promo">
+                <button id="poster-btn" class="btn-primary full-width">OPEN NOW</button>
             </div>
         </div>
 
-        <!-- PAGE: DEPOSIT -->
-        <div id="p-add" class="page">
-            <div class="section-title">Add Funds</div>
-            <div class="auth-card" style="width:100%; max-width:100%; border:1px solid #333;">
-                <p style="color:#aaa; font-size:12px; margin-bottom:10px;">Enter amount to generate QR</p>
-                <input type="number" id="d-amt" class="inp" placeholder="Amount (e.g. 100)" oninput="genQR()">
-                
-                <div id="qr-wrap" style="display:none; text-align:center;">
-                    <div class="qr-frame"><img id="qr-img" src="" class="qr-img"></div>
-                    <p style="color:var(--gold); font-size:12px; font-weight:bold; margin-bottom:5px;">Scan to Pay</p>
-                    <p style="color:gray; font-size:10px; margin-bottom:15px;">Use GPay / PhonePe / Paytm</p>
-                    <input type="text" id="d-utr" class="inp" placeholder="Enter 12 Digit UTR / Ref No.">
-                    <button onclick="submitDep()" class="btn">SUBMIT REQUEST</button>
-                </div>
-            </div>
-        </div>
+        <!-- MAIN CONTENT -->
+        <main id="main-content">
 
-        <!-- PAGE: HISTORY -->
-        <div id="p-hist" class="page">
-            <div class="section-title">History</div>
-            <div id="h-list"></div>
-        </div>
-
-        <!-- PAGE: PROFILE -->
-        <div id="p-prof" class="page">
-            <div class="section-title">Profile</div>
-            <div style="text-align:center; padding:25px; background:#111; border-radius:15px; border:1px solid #333;">
-                <img id="my-av" src="" style="width:90px; height:90px; border-radius:50%; border:2px solid var(--gold); margin-bottom:10px;">
-                <h3 id="my-u" style="color:white; margin-bottom:20px;">User</h3>
-                
-                <div style="display:flex; justify-content:center; gap:10px; margin-bottom:20px;">
-                    <button onclick="updAv('https://api.dicebear.com/7.x/avataaars/svg?seed=King')" class="badge-btn bg-blue">👨 Male</button>
-                    <button onclick="updAv('https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka')" class="badge-btn bg-blue">👩 Female</button>
+            <!-- HOME PAGE -->
+            <section id="page-home" class="page active">
+                <div class="hero-banner">
+                    <div class="hero-text">
+                        <h2>PREMIUM STOCK</h2>
+                        <p>Instant Delivery & Support</p>
+                    </div>
                 </div>
                 
-                <input type="text" id="new-name" class="inp" placeholder="New Name">
-                <button onclick="saveProf()" class="btn btn-sec">UPDATE</button>
-                <div onclick="logout()" style="color:red; margin-top:20px; font-size:12px; cursor:pointer;">LOGOUT</div>
+                <div class="section-head">
+                    <h3>Featured Items</h3>
+                    <div class="filter-badge"><i class="fas fa-sliders-h"></i> Filter</div>
+                </div>
+
+                <div id="products-grid" class="products-container"></div>
+            </section>
+
+            <!-- WALLET PAGE -->
+            <section id="page-wallet" class="page">
+                <div class="wallet-card">
+                    <p class="w-label">Total Balance</p>
+                    <h1 class="w-amount">₹<span id="w-bal">0</span></h1>
+                    <div class="w-btn-row">
+                        <button onclick="openModal('mod-add')" class="w-btn">
+                            <i class="fas fa-plus-circle"></i> Add Funds
+                        </button>
+                        <button onclick="nav('earn')" class="w-btn outline">
+                            <i class="fas fa-arrow-circle-down"></i> Withdraw
+                        </button>
+                    </div>
+                </div>
+
+                <div class="section-head"><h3>Transactions</h3></div>
+                <div id="txn-list" class="txn-list"></div>
+            </section>
+
+            <!-- REFER & EARN PAGE -->
+            <section id="page-earn" class="page">
+                <div class="refer-card">
+                    <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" class="gift-img">
+                    <h2>Invite & Earn</h2>
+                    <p>Share your code. Earn ₹2 on orders ₹30+, else ₹1.</p>
+                    
+                    <div class="code-display" onclick="copyCode()">
+                        <span id="my-ref-code">...</span>
+                        <i class="fas fa-copy"></i>
+                    </div>
+
+                    <div class="stats-row">
+                        <div class="stat-box">
+                            <span id="ref-count">0</span>
+                            <small>Invited</small>
+                        </div>
+                        <div class="stat-box">
+                            <span id="ref-money" class="green-text">₹0</span>
+                            <small>Earnings</small>
+                        </div>
+                    </div>
+
+                    <button onclick="openModal('mod-with')" class="btn-primary mt-20">WITHDRAW EARNINGS</button>
+                </div>
+            </section>
+
+            <!-- PROFILE PAGE -->
+            <section id="page-profile" class="page">
+                <div class="profile-header">
+                    <div class="av-wrap">
+                        <img id="u-av" src="">
+                        <div class="cam-icon" onclick="changeAvatar()"><i class="fas fa-camera"></i></div>
+                    </div>
+                    <h3 id="u-name">User</h3>
+                    <p id="u-id">UID: ...</p>
+                </div>
+
+                <div class="menu-list">
+                    <div class="menu-item" onclick="openChat()">
+                        <i class="fas fa-headset"></i> <span>Support Chat</span>
+                    </div>
+                    <div class="menu-item" onclick="window.open('https://t.me/banty','_blank')">
+                        <i class="fab fa-telegram"></i> <span>Join Channel</span>
+                    </div>
+                    <div class="menu-item logout" onclick="logout()">
+                        <i class="fas fa-sign-out-alt"></i> <span>Logout</span>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- FIXED NAVIGATION BAR -->
+        <nav class="bottom-nav">
+            <div class="nav-item active" onclick="nav('home', this)">
+                <i class="fas fa-home"></i>
+                <span>Home</span>
             </div>
-        </div>
-
-        <!-- PAGE: SUPPORT -->
-        <div id="p-help" class="page">
-            <div class="section-title">Support</div>
-            <textarea id="s-msg" class="inp" rows="5" placeholder="Describe your issue..."></textarea>
-            <button onclick="sendHelp()" class="btn">SEND MESSAGE</button>
-        </div>
-
-        <!-- BOTTOM NAV -->
-        <div class="btm-nav">
-            <i class="fas fa-store n-icon active" onclick="nav('home', this)"></i>
-            <i class="fas fa-wallet n-icon" onclick="nav('add', this)"></i>
-            <i class="fas fa-history n-icon" onclick="nav('hist', this)"></i>
-            <i class="fas fa-user n-icon" onclick="nav('prof', this)"></i>
-            <i class="fas fa-headset n-icon" onclick="nav('help', this)"></i>
-        </div>
+            <div class="nav-item" onclick="nav('wallet', this)">
+                <i class="fas fa-wallet"></i>
+                <span>Wallet</span>
+            </div>
+            <!-- FIXED REFERRAL BUTTON (No Floating) -->
+            <div class="nav-item" onclick="nav('earn', this)">
+                <i class="fas fa-users"></i>
+                <span>Refer</span>
+            </div>
+            <div class="nav-item" onclick="nav('profile', this)">
+                <i class="fas fa-user"></i>
+                <span>Profile</span>
+            </div>
+        </nav>
 
     </div>
 
-    <!-- PAYMENT MODAL -->
-    <div id="buy-mod" class="auth-overlay" style="display:none;">
-        <div class="auth-card">
-            <i class="fas fa-times" style="float:right; cursor:pointer; color:#666;" onclick="document.getElementById('buy-mod').style.display='none'"></i>
-            <h3 style="color:#fff; margin-bottom:10px;">Purchase</h3>
-            <p style="color:gray; font-size:12px; margin-bottom:20px;">Price: <span style="color:var(--gold); font-weight:bold;">₹<span id="pay-amt">0</span></span></p>
+    <!-- MODALS -->
+
+    <!-- 1. BUY MODAL (UPDATED WITH UPI) -->
+    <div id="mod-buy" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>Confirm Order</h3>
+                <div class="close-icon" onclick="closeModal('mod-buy')">×</div>
+            </div>
             
-            <div id="step1">
-                <button id="btn-w" onclick="payWallet()" class="btn" style="margin-bottom:10px;">PAY VIA WALLET</button>
-                <button onclick="payUPI()" class="btn btn-sec">DIRECT UPI</button>
+            <div class="product-summary">
+                <div id="buy-item">Item Name</div>
+                <div id="buy-price" class="p-price">₹0</div>
             </div>
 
-            <div id="step2" style="display:none;">
-                <input type="email" id="p-em" class="inp" placeholder="Email for Delivery">
-                <div id="utr-field" style="display:none;">
-                    <input type="text" id="p-utr" class="inp" placeholder="UTR (If Direct Pay)">
-                </div>
-                <button onclick="finOrd()" class="btn">CONFIRM ORDER</button>
+            <p class="input-label">Delivery Email:</p>
+            <input type="email" id="buy-email" class="modal-input" placeholder="e.g. user@gmail.com">
+
+            <div class="pay-options">
+                <button onclick="payWallet()" class="pay-btn wallet">
+                    <i class="fas fa-bolt"></i> Pay via Wallet
+                </button>
+                <button onclick="payUPI()" class="pay-btn upi">
+                    <i class="fas fa-mobile-alt"></i> Pay via UPI App
+                </button>
+            </div>
+            <p class="note-text">UPI: Pay directly via PhonePe/GPay.</p>
+        </div>
+    </div>
+
+    <!-- 2. ADD FUNDS MODAL -->
+    <div id="mod-add" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>Add Funds</h3>
+                <div class="close-icon" onclick="closeModal('mod-add')">×</div>
+            </div>
+            <input type="number" id="add-amt" class="modal-input" placeholder="Amount (e.g. 100)" oninput="genQR()">
+            
+            <div id="qr-area" style="display:none; text-align:center;">
+                <img id="qr-img" src="" class="qr-code-img">
+                <p class="qr-note">Scan & Pay Exact Amount</p>
+                <input type="text" id="add-utr" class="modal-input" placeholder="Enter 12 Digit UTR">
+                <button onclick="submitDeposit()" class="btn-primary full-width">SUBMIT REQUEST</button>
             </div>
         </div>
     </div>
 
-    <!-- FIREBASE -->
+    <!-- 3. WITHDRAW MODAL -->
+    <div id="mod-with" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>Withdraw</h3>
+                <div class="close-icon" onclick="closeModal('mod-with')">×</div>
+            </div>
+            <p class="avail-bal">Earnings: ₹<span id="w-avail">0</span></p>
+            <input type="number" id="with-amt" class="modal-input" placeholder="Amount">
+            <input type="text" id="with-upi" class="modal-input" placeholder="UPI ID / Number">
+            <button onclick="submitWithdraw()" class="btn-primary full-width">REQUEST PAYOUT</button>
+        </div>
+    </div>
+
+    <!-- 4. CHAT MODAL -->
+    <div id="mod-chat" class="modal-overlay">
+        <div class="modal-box chat-box">
+            <div class="modal-header">
+                <h3>Support</h3>
+                <div class="close-icon" onclick="closeModal('mod-chat')">×</div>
+            </div>
+            <div id="chat-msgs" class="chat-list"></div>
+            <div class="chat-input-area">
+                <input type="text" id="chat-txt" placeholder="Type message...">
+                <button onclick="sendChat()"><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </div>
+    </div>
+
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     <script src="app.js"></script>
-
 </body>
 </html>
