@@ -3,231 +3,313 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Console | Elite V21</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>XamIQ | Master Admin Panel</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #020617; --card: #0f172a; --primary: #06b6d4; --text: #f8fafc;
-            --border: 1px solid rgba(6, 182, 212, 0.2); --glass: rgba(15, 23, 42, 0.9);
+            --sidebar-width: 280px;
+            --accent-color: #ff8c00;
+            --bg-admin: #f4f7f6;
+            --text-admin: #2d3436;
         }
-        * { margin:0; padding:0; box-sizing:border-box; font-family:'Outfit', sans-serif; outline:none; }
-        body { background: var(--bg); color: var(--text); padding-bottom: 50px; min-height:100vh; }
-
-        /* LOGIN */
-        #login-overlay {
-            position: fixed; inset: 0; background: #000; z-index: 9999;
-            display: flex; align-items: center; justify-content: center;
-            background-image: radial-gradient(circle, #1e293b 0%, #000 100%);
+        body {
+            display: flex;
+            background: var(--bg-admin);
+            color: var(--text-admin);
+            overflow: hidden;
         }
-        .login-box {
-            background: var(--glass); border: var(--border); padding: 40px;
-            border-radius: 20px; text-align: center; width: 320px;
-            box-shadow: 0 0 50px rgba(6, 182, 212, 0.15);
+        .admin-sidebar {
+            width: var(--sidebar-width);
+            height: 100vh;
+            background: #1a1d21;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            padding: 30px 0;
+            flex-shrink: 0;
         }
-        input, select, textarea {
-            width: 100%; padding: 12px; background: #020617; border: 1px solid #334155;
-            color: #fff; border-radius: 10px; margin-bottom: 10px; font-size: 14px;
+        .admin-brand {
+            padding: 0 30px 40px;
+            font-size: 1.8rem;
+            font-weight: 800;
+            letter-spacing: -1px;
         }
-        button {
-            width: 100%; padding: 12px; border: none; border-radius: 10px;
-            cursor: pointer; font-weight: 700; text-transform: uppercase;
+        .admin-nav {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .admin-link {
+            padding: 15px 30px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            cursor: pointer;
+            color: #95a5a6;
+            font-weight: 500;
+            transition: 0.3s;
+            border-left: 4px solid transparent;
+        }
+        .admin-link:hover, .admin-link.active {
+            background: rgba(255, 140, 0, 0.1);
+            color: white;
+            border-left-color: var(--accent-color);
+        }
+        .main-workspace {
+            flex: 1;
+            height: 100vh;
+            overflow-y: auto;
+            padding: 40px;
+        }
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+        .admin-header h1 { font-weight: 800; font-size: 2rem; }
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+        .stat-box {
+            background: white;
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .stat-label { color: #636e72; font-weight: 600; font-size: 0.9rem; }
+        .stat-count { font-size: 2rem; font-weight: 800; color: var(--accent-color); }
+        .data-card {
+            background: white;
+            border-radius: 24px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.02);
+            margin-bottom: 30px;
+        }
+        .data-card h3 { margin-bottom: 25px; font-weight: 700; font-size: 1.3rem; }
+        .admin-form {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .full-width { grid-column: span 2; }
+        .form-input {
+            width: 100%;
+            padding: 14px 18px;
+            border-radius: 12px;
+            border: 1px solid #dfe6e9;
+            background: #f9f9f9;
+            font-family: inherit;
+            outline: none;
             transition: 0.3s;
         }
-        .btn-main { background: var(--primary); color: #000; box-shadow: 0 5px 15px rgba(6, 182, 212, 0.2); }
-        .btn-main:hover { transform: translateY(-2px); }
-        .btn-danger { background: #ef4444; color: #fff; }
-        .btn-success { background: #10b981; color: #fff; }
-        .btn-sm { padding: 5px 10px; font-size: 11px; width: auto; border-radius: 6px; }
-
-        /* DASHBOARD */
-        #admin-dash { display: none; max-width: 1200px; margin: 0 auto; padding: 20px; }
-        .top-nav {
-            background: var(--card); padding: 20px; border-radius: 16px; border: var(--border);
-            display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;
+        .form-input:focus { border-color: var(--accent-color); background: white; }
+        .admin-btn {
+            background: var(--accent-color);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 12px;
+            border: none;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 10px 20px rgba(255, 140, 0, 0.2);
+            transition: 0.3s;
         }
-        .brand { font-size: 22px; font-weight: 800; } .brand span { color: var(--primary); }
-
-        .tabs { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 20px; }
-        .tab {
-            padding: 10px 20px; background: #1e293b; border-radius: 30px; border: 1px solid #334155;
-            color: #94a3b8; cursor: pointer; white-space: nowrap; font-size: 13px;
+        .admin-btn:hover { transform: translateY(-3px); box-shadow: 0 15px 30px rgba(255, 140, 0, 0.3); }
+        .admin-table {
+            width: 100%;
+            border-collapse: collapse;
         }
-        .tab.active { background: var(--primary); color: #000; font-weight: 700; border-color: var(--primary); }
-
-        .section { display: none; animation: fadeIn 0.3s; }
-        .section.active { display: block; }
-        @keyframes fadeIn { from{opacity:0;transform:translateY(10px);} to{opacity:1;transform:translateY(0);} }
-
-        .panel { background: var(--card); border: var(--border); padding: 20px; border-radius: 16px; margin-bottom: 20px; }
-        .panel h3 { color: #fff; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; font-size: 18px; }
-        .panel h3 i { color: var(--primary); }
-
-        .list-row {
-            background: rgba(2, 6, 23, 0.6); padding: 15px; border-radius: 12px;
-            margin-bottom: 10px; border-left: 3px solid var(--primary);
-            display: flex; justify-content: space-between; align-items: center;
+        .admin-table th {
+            text-align: left;
+            padding: 15px;
+            color: #636e72;
+            font-weight: 600;
+            border-bottom: 2px solid #f1f2f6;
         }
-        .info b { display: block; font-size: 15px; color: #fff; margin-bottom: 4px; }
-        .info p { font-size: 12px; color: #94a3b8; }
-        .actions { display: flex; gap: 8px; }
-
-        /* STATS GRID */
-        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
-        .stat-card { background: linear-gradient(135deg, #1e293b, #0f172a); padding: 20px; border-radius: 16px; border: var(--border); }
-        .stat-card h1 { color: var(--primary); font-size: 30px; }
-        .stat-card p { font-size: 12px; color: #94a3b8; text-transform: uppercase; }
-
-        /* MODAL */
-        #mod-action {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 2000;
-            display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px);
+        .admin-table td { padding: 15px; border-bottom: 1px solid #f1f2f6; vertical-align: middle; }
+        .thumb-preview { width: 60px; height: 35px; border-radius: 6px; object-fit: cover; }
+        .badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
         }
-        .modal-con { background: #0f172a; width: 90%; max-width: 450px; padding: 25px; border-radius: 20px; border: var(--border); }
-        .badge-ban { background: #ef4444; color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 10px; }
+        .badge-active { background: #e8f5e9; color: #2ecc71; }
+        .badge-inactive { background: #ffebee; color: #ff4757; }
+        .btn-action {
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.8rem;
+        }
+        .btn-del { background: #ffebee; color: #ff4757; }
+        .btn-tog { background: #f1f2f6; color: #2d3436; }
+        .chat-manager {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            height: 600px;
+            border-radius: 20px;
+            overflow: hidden;
+            background: white;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.05);
+        }
+        .chat-sidebar { border-right: 1px solid #f1f2f6; overflow-y: auto; }
+        .user-chat-tab {
+            padding: 20px;
+            border-bottom: 1px solid #f1f2f6;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .user-chat-tab:hover, .user-chat-tab.active { background: #f9f9f9; border-right: 4px solid var(--accent-color); }
+        .user-chat-tab .u-name { font-weight: 700; margin-bottom: 4px; }
+        .user-chat-tab .u-last { font-size: 0.8rem; color: #636e72; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .chat-view { display: flex; flex-direction: column; background: #fafafa; }
+        .chat-view-msgs { flex: 1; padding: 30px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+        .chat-view-input { padding: 25px; background: white; display: flex; gap: 15px; border-top: 1px solid #f1f2f6; }
     </style>
 </head>
 <body>
 
-    <div id="login-overlay">
-        <div class="login-box">
-            <i class="fas fa-user-shield" style="font-size:40px; color:var(--primary); margin-bottom:15px;"></i>
-            <h2 style="color:var(--primary); margin-bottom:20px;">ADMIN ACCESS</h2>
-            <input type="password" id="adm-key" placeholder="Security Key">
-            <button class="btn-main" onclick="adminAuth()">LOGIN</button>
-        </div>
-    </div>
+    <aside class="admin-sidebar">
+        <div class="admin-brand"><span class="text-xam">Xam</span><span class="text-iq">IQ</span></div>
+        <nav class="admin-nav">
+            <div class="admin-link active" data-tab="dashboard">Dashboard</div>
+            <div class="admin-link" data-tab="courses">Courses</div>
+            <div class="admin-link" data-tab="users">Users</div>
+            <div class="admin-link" data-tab="chats">Live Chat</div>
+            <div class="admin-link" data-tab="poster">Start Poster</div>
+            <div class="admin-link" data-tab="settings">App Settings</div>
+        </nav>
+    </aside>
 
-    <div id="admin-dash">
-        <div class="top-nav">
-            <div class="brand">ELITE<span>PANEL</span></div>
-            <button class="btn-danger btn-sm" onclick="location.reload()">LOGOUT</button>
-        </div>
-
-        <div class="tabs">
-            <button class="tab active" onclick="nav('dash')">Overview</button>
-            <button class="tab" onclick="nav('orders')">Orders</button>
-            <button class="tab" onclick="nav('dep')">Deposits</button>
-            <button class="tab" onclick="nav('with')">Withdrawals</button>
-            <button class="tab" onclick="nav('users')">Users & Ban</button>
-            <button class="tab" onclick="nav('shop')">Products</button>
-            <button class="tab" onclick="nav('set')">Poster & Ads</button>
-            <button class="tab" onclick="nav('chat')">Support</button>
-        </div>
-
-        <!-- 1. DASHBOARD -->
-        <div id="sec-dash" class="section active">
-            <div class="stats">
-                <div class="stat-card"><h1 id="s-users">0</h1><p>Total Users</p></div>
-                <div class="stat-card"><h1 id="s-orders">0</h1><p>Pending Orders</p></div>
-                <div class="stat-card"><h1 id="s-deps">0</h1><p>Deposit Requests</p></div>
-            </div>
-        </div>
-
-        <!-- 2. ORDERS -->
-        <div id="sec-orders" class="section">
-            <div class="panel">
-                <h3><i class="fas fa-box"></i> Pending Orders</h3>
-                <div id="list-orders"></div>
-            </div>
-        </div>
-
-        <!-- 3. DEPOSITS -->
-        <div id="sec-dep" class="section">
-            <div class="panel">
-                <h3><i class="fas fa-wallet"></i> Wallet Requests</h3>
-                <div id="list-dep"></div>
-            </div>
-        </div>
-
-        <!-- 4. WITHDRAWALS -->
-        <div id="sec-with" class="section">
-            <div class="panel">
-                <h3><i class="fas fa-money-bill-wave"></i> Payout Requests</h3>
-                <div id="list-with"></div>
-            </div>
-        </div>
-
-        <!-- 5. USERS -->
-        <div id="sec-users" class="section">
-            <div class="panel">
-                <h3><i class="fas fa-users"></i> Manage Users</h3>
-                <input type="text" id="search-u" placeholder="Search Username..." onkeyup="filterUser()">
-                <div id="list-users"></div>
-            </div>
-        </div>
-
-        <!-- 6. PRODUCTS -->
-        <div id="sec-shop" class="section">
-            <div class="panel">
-                <h3><i class="fas fa-plus-circle"></i> Add Product</h3>
-                <div style="display:grid; grid-template-columns:2fr 1fr; gap:10px;">
-                    <input type="text" id="p-t" placeholder="Title">
-                    <input type="number" id="p-p" placeholder="Price">
+    <main class="main-workspace">
+        
+        <div id="tab-dashboard" class="tab-pane">
+            <header class="admin-header"><h1>Dashboard Overview</h1></header>
+            <div class="stats-row">
+                <div class="stat-box">
+                    <span class="stat-label">TOTAL STUDENTS</span>
+                    <span id="stat-users" class="stat-count">0</span>
                 </div>
-                <input type="text" id="p-i" placeholder="Image URL">
-                <button class="btn-main" onclick="addProd()">ADD ITEM</button>
-            </div>
-            <div class="panel">
-                <h3>Inventory</h3>
-                <div id="list-prod"></div>
-            </div>
-        </div>
-
-        <!-- 7. SETTINGS (POSTER) -->
-        <div id="sec-set" class="section">
-            <div class="panel">
-                <h3><i class="fas fa-image"></i> App Popup Poster</h3>
-                <input type="text" id="po-img" placeholder="Poster Image URL">
-                <input type="text" id="po-lnk" placeholder="Target Link">
-                <div style="display:flex; gap:10px; margin-top:10px;">
-                    <button class="btn-success" onclick="savePoster(true)">ENABLE</button>
-                    <button class="btn-danger" onclick="savePoster(false)">DISABLE</button>
+                <div class="stat-box">
+                    <span class="stat-label">ACTIVE COURSES</span>
+                    <span id="stat-courses" class="stat-count">0</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">SUPPORT TICKETS</span>
+                    <span id="stat-chats" class="stat-count">0</span>
                 </div>
             </div>
-            <div class="panel">
-                <h3><i class="fas fa-bell"></i> Send Broadcast</h3>
-                <input type="text" id="br-t" placeholder="Title">
-                <input type="text" id="br-m" placeholder="Message">
-                <button class="btn-main" onclick="sendBroad()">SEND</button>
+        </div>
+
+        <div id="tab-courses" class="tab-pane hidden">
+            <header class="admin-header"><h1>Manage Courses</h1></header>
+            <div class="data-card">
+                <h3>Add New Content</h3>
+                <div class="admin-form">
+                    <input type="text" id="add-title" class="form-input" placeholder="Course Title">
+                    <input type="text" id="add-thumb" class="form-input" placeholder="Thumbnail Image URL">
+                    <input type="text" id="add-url" class="form-input full-width" placeholder="Website / Video URL">
+                    <button id="save-course-btn" class="admin-btn">Publish Course</button>
+                </div>
+            </div>
+            <div class="data-card">
+                <h3>Course Inventory</h3>
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Media</th>
+                            <th>Title</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="course-table-body"></tbody>
+                </table>
             </div>
         </div>
 
-        <!-- 8. SUPPORT -->
-        <div id="sec-chat" class="section">
-            <div class="panel">
-                <h3><i class="fas fa-headset"></i> User Tickets</h3>
-                <div id="list-chat"></div>
+        <div id="tab-users" class="tab-pane hidden">
+            <header class="admin-header"><h1>Student Directory</h1></header>
+            <div class="data-card">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Student Name</th>
+                            <th>UID</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="user-table-body"></tbody>
+                </table>
             </div>
         </div>
 
-    </div>
-
-    <!-- MODAL -->
-    <div id="mod-action" class="modal-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:2000; align-items:center; justify-content:center;">
-        <div class="modal-con">
-            <h3 style="color:var(--primary); margin-bottom:15px;">Action Required</h3>
-            <input type="hidden" id="ac-id"><input type="hidden" id="ac-uid"><input type="hidden" id="ac-ex">
-            
-            <!-- Views -->
-            <div id="v-del" style="display:none;">
-                <p style="color:#aaa; font-size:12px; margin-bottom:5px;">Product Data:</p>
-                <textarea id="d-msg" rows="5" placeholder="ID/Pass or Key..."></textarea>
-                <button class="btn-success" style="width:100%" onclick="doDeliver()">COMPLETE ORDER</button>
+        <div id="tab-chats" class="tab-pane hidden">
+            <header class="admin-header"><h1>Live Support Desk</h1></header>
+            <div class="chat-manager">
+                <div class="chat-sidebar" id="chat-user-list"></div>
+                <div class="chat-view">
+                    <div class="chat-view-msgs" id="admin-chat-window">
+                        <div style="margin: auto; color: #999; font-weight: 600;">Select a user to reply</div>
+                    </div>
+                    <div class="chat-view-input">
+                        <input type="text" id="admin-chat-field" class="form-input" placeholder="Write a reply...">
+                        <button id="admin-chat-send" class="admin-btn">Send</button>
+                    </div>
+                </div>
             </div>
-
-            <div id="v-chat" style="display:none;">
-                <div id="chat-hist" style="height:200px; overflow-y:auto; background:#000; padding:10px; margin-bottom:10px; border-radius:10px; font-size:12px;"></div>
-                <input type="text" id="c-rep" placeholder="Reply...">
-                <button class="btn-main" style="width:100%" onclick="doReply()">SEND</button>
-            </div>
-
-            <button class="btn-danger" style="width:100%; margin-top:10px;" onclick="document.getElementById('mod-action').style.display='none'">CLOSE</button>
         </div>
-    </div>
 
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+        <div id="tab-poster" class="tab-pane hidden">
+            <header class="admin-header"><h1>Startup Poster</h1></header>
+            <div class="data-card">
+                <h3>Configuration</h3>
+                <div class="admin-form">
+                    <input type="text" id="poster-img" class="form-input full-width" placeholder="Poster Image URL">
+                    <input type="text" id="poster-link" class="form-input full-width" placeholder="Redirect Link (Internal URL)">
+                    <div class="full-width" style="display:flex; gap:15px;">
+                        <button id="update-poster" class="admin-btn">Update Poster</button>
+                        <button id="remove-poster" class="admin-btn" style="background:#ff4757;">Remove Current</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-settings" class="tab-pane hidden">
+            <header class="admin-header"><h1>Global Settings</h1></header>
+            <div class="data-card">
+                <div class="admin-form">
+                    <div class="full-width">
+                        <label style="display:flex; align-items:center; gap:15px; cursor:pointer;">
+                            <input type="checkbox" id="check-audio" style="width:20px; height:20px;">
+                            <strong>Enable Welcome Audio</strong>
+                        </label>
+                    </div>
+                    <div class="full-width" style="margin-top:20px;">
+                        <button id="save-global-settings" class="admin-btn">Save All Changes</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="firebase.js"></script>
     <script src="admin.js"></script>
 </body>
 </html>

@@ -1,352 +1,241 @@
-// ==========================================
-// ELITE ADMIN LOGIC V21 (FINAL)
-// ==========================================
-
-const firebaseConfig = {
-  // 🔴 Apni Firebase Config Yahan Paste Karein
-  apiKey: "AIzaSyA2iHrUt8_xxvB2m8-LftaE9sg_5JaiFk8",
-  authDomain: "banty-live.firebaseapp.com",
-  projectId: "banty-live",
-  storageBucket: "banty-live.firebasestorage.app",
-  messagingSenderId: "435477036444",
-  appId: "1:435477036444:web:207931e07ea52ca3269c59",
-  measurementId: "G-HXMVFK1E1C"
+const AdminState = {
+    activeTab: 'dashboard',
+    activeChatUser: null,
+    users: [],
+    courses: []
 };
 
-// INITIALIZE
-if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+const UI = {
+    tabs: document.querySelectorAll('.admin-link'),
+    panes: document.querySelectorAll('.tab-pane'),
+    statUsers: document.getElementById('stat-users'),
+    statCourses: document.getElementById('stat-courses'),
+    statChats: document.getElementById('stat-chats'),
+    courseTable: document.getElementById('course-table-body'),
+    userTable: document.getElementById('user-table-body'),
+    chatUserList: document.getElementById('chat-user-list'),
+    chatWindow: document.getElementById('admin-chat-window'),
+    chatInput: document.getElementById('admin-chat-field'),
+    chatSendBtn: document.getElementById('admin-chat-send'),
+    saveCourseBtn: document.getElementById('save-course-btn'),
+    updatePosterBtn: document.getElementById('update-poster'),
+    removePosterBtn: document.getElementById('remove-poster'),
+    saveSettingsBtn: document.getElementById('save-global-settings')
+};
 
-let chatSub = null;
+const AdminApp = {
+    init: function() {
+        this.setupNavigation();
+        this.syncDashboard();
+        this.syncCourses();
+        this.syncUsers();
+        this.syncChats();
+        this.loadSettings();
+        this.setupActions();
+    },
 
-// 1. AUTHENTICATION
-function adminAuth() {
-    const k = document.getElementById('adm-key').value;
-    if(k === "akku1") {
-        document.getElementById('login-overlay').style.display = 'none';
-        document.getElementById('admin-dash').style.display = 'block';
-        initRealtime();
-    } else {
-        alert("Invalid Key!");
-    }
-}
-
-// 2. NAVIGATION
-function nav(id) {
-    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    document.getElementById('sec-' + id).classList.add('active');
-    event.target.classList.add('active');
-}
-
-// 3. REALTIME DATA LISTENERS
-function initRealtime() {
-    
-    // --- A. ORDERS ---
-    db.collection("orders").where("status", "==", "pending").onSnapshot(snap => {
-        const l = document.getElementById('list-orders');
-        l.innerHTML = "";
-        document.getElementById('s-orders').innerText = snap.size;
-        
-        if(snap.empty) l.innerHTML = "<p style='color:#777; padding:10px;'>No pending orders.</p>";
-
-        snap.forEach(doc => {
-            const d = doc.data();
-            l.innerHTML += `
-            <div class="list-row">
-                <div class="info">
-                    <b>${d.item} <span style="color:var(--primary)">₹${d.price}</span></b>
-                    <p>${d.username} | ${d.email} | Pay: ${d.payment}</p>
-                </div>
-                <div class="actions">
-                    <button class="btn-success btn-sm" onclick="openDel('${doc.id}', '${d.uid}', ${d.price})">DELIVER</button>
-                    <button class="btn-danger btn-sm" onclick="cancelOrd('${doc.id}')">CANCEL</button>
-                </div>
-            </div>`;
+    setupNavigation: function() {
+        UI.tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const target = tab.getAttribute('data-tab');
+                AdminState.activeTab = target;
+                
+                UI.tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                
+                UI.panes.forEach(p => p.classList.add('hidden'));
+                document.getElementById(`tab-${target}`).classList.remove('hidden');
+            });
         });
-    });
+    },
 
-    // --- B. DEPOSITS ---
-    db.collection("deposits").where("status", "==", "pending").onSnapshot(snap => {
-        const l = document.getElementById('list-dep');
-        l.innerHTML = "";
-        document.getElementById('s-deps').innerText = snap.size;
-
-        snap.forEach(doc => {
-            const d = doc.data();
-            l.innerHTML += `
-            <div class="list-row">
-                <div class="info">
-                    <b>₹${d.amt} Deposit</b>
-                    <p>${d.username} | UTR: ${d.utr}</p>
-                </div>
-                <div class="actions">
-                    <button class="btn-success btn-sm" onclick="accDep('${doc.id}', '${d.uid}', ${d.amt})">ACCEPT</button>
-                    <button class="btn-danger btn-sm" onclick="rejDep('${doc.id}')">REJECT</button>
-                </div>
-            </div>`;
+    syncDashboard: function() {
+        db.collection('XamIQ_Users').onSnapshot(snap => {
+            UI.statUsers.innerText = snap.size;
         });
-    });
-
-    // --- C. WITHDRAWALS ---
-    db.collection("withdrawals").where("status", "==", "pending").onSnapshot(snap => {
-        const l = document.getElementById('list-with');
-        l.innerHTML = "";
-        
-        snap.forEach(doc => {
-            const d = doc.data();
-            l.innerHTML += `
-            <div class="list-row">
-                <div class="info">
-                    <b style="color:#ef4444">₹${d.amt} Payout</b>
-                    <p>${d.username} | ${d.details}</p>
-                </div>
-                <button class="btn-success btn-sm" onclick="payWith('${doc.id}', '${d.uid}', ${d.amt})">MARK PAID</button>
-            </div>`;
+        db.collection('XamIQ_Courses').onSnapshot(snap => {
+            UI.statCourses.innerText = snap.size;
         });
-    });
-
-    // --- D. USERS & BAN SYSTEM ---
-    db.collection("users").orderBy("joined", "desc").limit(50).onSnapshot(snap => {
-        const l = document.getElementById('list-users');
-        l.innerHTML = "";
-        document.getElementById('s-users').innerText = snap.size;
-
-        snap.forEach(doc => {
-            const u = doc.data();
-            const isBanned = u.banned ? true : false;
-            const banBtn = isBanned 
-                ? `<button class="btn-success btn-sm" onclick="toggleBan('${doc.id}', false)">UNBAN</button>`
-                : `<button class="btn-danger btn-sm" onclick="toggleBan('${doc.id}', true)">BAN</button>`;
-            
-            const badge = isBanned ? '<span class="badge-ban">BANNED</span>' : '';
-
-            l.innerHTML += `
-            <div class="list-row">
-                <div class="info">
-                    <b>${u.username} ${badge}</b>
-                    <p>Bal: ₹${u.balance} | Earn: ₹${u.earnings}</p>
-                    <p style="font-size:10px; color:#555">RefBy: ${u.referredBy || 'None'}</p>
-                </div>
-                <div class="actions">
-                    <button class="btn-main btn-sm" onclick="editBal('${doc.id}')">BAL</button>
-                    ${banBtn}
-                </div>
-            </div>`;
+        db.collection('XamIQ_Chats').onSnapshot(snap => {
+            const uniqueUsers = new Set();
+            snap.forEach(doc => uniqueUsers.add(doc.data().userId));
+            UI.statChats.innerText = uniqueUsers.size;
         });
-    });
+    },
 
-    // --- E. PRODUCTS ---
-    db.collection("products").onSnapshot(snap => {
-        const l = document.getElementById('list-prod');
-        l.innerHTML = "";
-        snap.forEach(doc => {
-            const p = doc.data();
-            l.innerHTML += `
-            <div class="list-row">
-                <div class="info">
-                    <b>${p.title}</b>
-                    <p>₹${p.price}</p>
-                </div>
-                <button class="btn-danger btn-sm" onclick="delProd('${doc.id}')">DEL</button>
-            </div>`;
+    syncCourses: function() {
+        db.collection('XamIQ_Courses').orderBy('createdAt', 'desc').onSnapshot(snap => {
+            UI.courseTable.innerHTML = '';
+            snap.forEach(doc => {
+                const data = doc.data();
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><img src="${data.thumb}" class="thumb-preview"></td>
+                    <td style="font-weight:600;">${data.title}</td>
+                    <td><span class="badge ${data.enabled ? 'badge-active' : 'badge-inactive'}">${data.enabled ? 'Active' : 'Hidden'}</span></td>
+                    <td>
+                        <div style="display:flex; gap:8px;">
+                            <button class="btn-action btn-tog" onclick="AdminApp.toggleCourse('${doc.id}', ${data.enabled})">Toggle</button>
+                            <button class="btn-action btn-del" onclick="AdminApp.deleteCourse('${doc.id}')">Delete</button>
+                        </div>
+                    </td>
+                `;
+                UI.courseTable.appendChild(tr);
+            });
         });
-    });
+    },
 
-    // --- F. SUPPORT ---
-    db.collection("support").orderBy("time", "desc").limit(10).onSnapshot(snap => {
-        const l = document.getElementById('list-chat');
-        l.innerHTML = "";
-        snap.forEach(doc => {
-            const s = doc.data();
-            l.innerHTML += `
-            <div class="list-row">
-                <div class="info"><p><b>${s.username}:</b> ${s.msg}</p></div>
-                <button class="btn-main btn-sm" onclick="openChat('${s.uid}')">REPLY</button>
-            </div>`;
+    syncUsers: function() {
+        db.collection('XamIQ_Users').orderBy('joinedAt', 'desc').onSnapshot(snap => {
+            UI.userTable.innerHTML = '';
+            snap.forEach(doc => {
+                const data = doc.data();
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="font-weight:600;">${data.name}</td>
+                    <td style="font-family:monospace; font-size:0.8rem; color:#636e72;">${doc.id}</td>
+                    <td><span class="badge badge-active">Authorized</span></td>
+                    <td>
+                        <button class="btn-action btn-del" onclick="AdminApp.deleteUser('${doc.id}')">Ban</button>
+                    </td>
+                `;
+                UI.userTable.appendChild(tr);
+            });
         });
-    });
+    },
 
-    // --- LOAD POSTER ---
-    db.collection("settings").doc("promo").get().then(doc => {
-        if(doc.exists) {
-            const d = doc.data();
-            document.getElementById('po-img').value = d.img || "";
-            document.getElementById('po-lnk').value = d.link || "";
-        }
-    });
-}
-
-// 4. LOGIC FUNCTIONS
-
-// --- ORDER & REFERRAL ---
-function openDel(oid, uid, price) {
-    document.getElementById('mod-action').style.display = 'flex';
-    document.getElementById('v-del').style.display = 'block';
-    document.getElementById('v-chat').style.display = 'none';
-    
-    document.getElementById('ac-id').value = oid;
-    document.getElementById('ac-uid').value = uid;
-    document.getElementById('ac-ex').value = price;
-}
-
-function doDeliver() {
-    const oid = document.getElementById('ac-id').value;
-    const uid = document.getElementById('ac-uid').value;
-    const price = parseInt(document.getElementById('ac-ex').value);
-    const msg = document.getElementById('d-msg').value;
-
-    if(!msg) return alert("Content Required");
-
-    // 1. Complete Order
-    db.collection("orders").doc(oid).update({ status: 'completed' });
-    sendNotif(uid, "Order Delivered", msg);
-
-    // 2. REFERRAL LOGIC
-    db.collection("users").doc(uid).get().then(uDoc => {
-        const u = uDoc.data();
-        if(u.referredBy) {
-            // Find referrer by Username
-            db.collection("users").where("username", "==", u.referredBy).get().then(refSnap => {
-                if(!refSnap.empty) {
-                    const refDoc = refSnap.docs[0];
-                    const refId = refDoc.id;
-                    const rData = refDoc.data();
-
-                    // Reward: ₹2 if >= 30, else ₹1
-                    const reward = (price >= 30) ? 2 : 1;
-                    const newEarn = (rData.earnings || 0) + reward;
-
-                    db.collection("users").doc(refId).update({ earnings: newEarn });
-                    sendNotif(refId, "Referral Bonus", `You earned ₹${reward} from ${u.username}'s purchase.`);
+    syncChats: function() {
+        db.collection('XamIQ_Chats').orderBy('timestamp', 'desc').onSnapshot(snap => {
+            const chatGroups = {};
+            snap.forEach(doc => {
+                const data = doc.data();
+                if (!chatGroups[data.userId]) {
+                    chatGroups[data.userId] = {
+                        name: data.userName,
+                        lastMsg: data.text,
+                        userId: data.userId
+                    };
                 }
             });
-        }
-    });
 
-    document.getElementById('mod-action').style.display = 'none';
-    alert("Delivered & Rewards Processed!");
-}
+            UI.chatUserList.innerHTML = '';
+            Object.values(chatGroups).forEach(group => {
+                const div = document.createElement('div');
+                div.className = `user-chat-tab ${AdminState.activeChatUser === group.userId ? 'active' : ''}`;
+                div.innerHTML = `
+                    <div class="u-name">${group.name}</div>
+                    <div class="u-last">${group.lastMsg}</div>
+                `;
+                div.onclick = () => this.loadUserChat(group.userId, group.name);
+                UI.chatUserList.appendChild(div);
+            });
+        });
+    },
 
-function cancelOrd(id) {
-    if(confirm("Cancel?")) db.collection("orders").doc(id).update({ status: 'cancelled' });
-}
+    loadUserChat: function(userId, userName) {
+        AdminState.activeChatUser = userId;
+        this.syncChats();
+        
+        db.collection('XamIQ_Chats')
+            .where('userId', '==', userId)
+            .orderBy('timestamp', 'asc')
+            .onSnapshot(snap => {
+                if (AdminState.activeChatUser !== userId) return;
+                UI.chatWindow.innerHTML = '';
+                snap.forEach(doc => {
+                    const m = doc.data();
+                    const msgDiv = document.createElement('div');
+                    const isAdmin = m.role === 'admin';
+                    msgDiv.style.cssText = `
+                        max-width: 80%;
+                        padding: 12px 16px;
+                        border-radius: 15px;
+                        font-size: 0.9rem;
+                        ${isAdmin ? 'align-self: flex-end; background: #ff8c00; color: white; border-bottom-right-radius: 2px;' : 'align-self: flex-start; background: #eee; color: #2d3436; border-bottom-left-radius: 2px;'}
+                    `;
+                    msgDiv.innerText = m.text;
+                    UI.chatWindow.appendChild(msgDiv);
+                });
+                UI.chatWindow.scrollTop = UI.chatWindow.scrollHeight;
+            });
+    },
 
-// --- DEPOSITS ---
-function accDep(did, uid, amt) {
-    if(confirm(`Approve ₹${amt}?`)) {
-        db.collection("deposits").doc(did).update({ status: 'success' });
-        db.collection("users").doc(uid).get().then(u => {
-            const nb = (u.data().balance || 0) + amt;
-            db.collection("users").doc(uid).update({ balance: nb });
-            sendNotif(uid, "Deposit Approved", `₹${amt} added to wallet.`);
+    setupActions: function() {
+        UI.saveCourseBtn.addEventListener('click', () => {
+            const title = document.getElementById('add-title').value;
+            const thumb = document.getElementById('add-thumb').value;
+            const url = document.getElementById('add-url').value;
+
+            if (!title || !thumb || !url) return alert('Fill all fields');
+
+            db.collection('XamIQ_Courses').add({
+                title, thumb, url,
+                enabled: true,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            }).then(() => {
+                document.getElementById('add-title').value = '';
+                document.getElementById('add-thumb').value = '';
+                document.getElementById('add-url').value = '';
+            });
+        });
+
+        UI.chatSendBtn.addEventListener('click', () => {
+            const text = UI.chatInput.value.trim();
+            if (!text || !AdminState.activeChatUser) return;
+
+            db.collection('XamIQ_Chats').add({
+                userId: AdminState.activeChatUser,
+                userName: "Admin",
+                text: text,
+                role: 'admin',
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            UI.chatInput.value = '';
+        });
+
+        UI.updatePosterBtn.addEventListener('click', () => {
+            const img = document.getElementById('poster-img').value;
+            const link = document.getElementById('poster-link').value;
+            if (!img || !link) return alert('Fill poster details');
+
+            db.collection('XamIQ_Posters').doc('current').set({
+                image: img,
+                link: link,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            }).then(() => alert('Poster Updated Live'));
+        });
+
+        UI.removePosterBtn.addEventListener('click', () => {
+            db.collection('XamIQ_Posters').doc('current').delete().then(() => alert('Poster Removed'));
+        });
+
+        UI.saveSettingsBtn.addEventListener('click', () => {
+            const audio = document.getElementById('check-audio').checked;
+            db.collection('XamIQ_Settings').doc('global').set({
+                welcomeSound: audio
+            }).then(() => alert('Settings Applied Globally'));
+        });
+    },
+
+    toggleCourse: function(id, status) {
+        db.collection('XamIQ_Courses').doc(id).update({ enabled: !status });
+    },
+
+    deleteCourse: function(id) {
+        if(confirm('Delete permanently?')) db.collection('XamIQ_Courses').doc(id).delete();
+    },
+
+    deleteUser: function(id) {
+        if(confirm('Ban this student?')) db.collection('XamIQ_Users').doc(id).delete();
+    },
+
+    loadSettings: function() {
+        db.collection('XamIQ_Settings').doc('global').get().then(doc => {
+            if (doc.exists) {
+                document.getElementById('check-audio').checked = doc.data().welcomeSound;
+            }
         });
     }
-}
-function rejDep(did) {
-    if(confirm("Reject?")) db.collection("deposits").doc(did).update({ status: 'rejected' });
-}
+};
 
-// --- WITHDRAWALS ---
-function payWith(wid, uid, amt) {
-    if(confirm("Mark Paid?")) {
-        db.collection("withdrawals").doc(wid).update({ status: 'success' });
-        sendNotif(uid, "Withdrawal Paid", `₹${amt} sent to your bank.`);
-    }
-}
-
-// --- USERS & BAN ---
-function toggleBan(uid, status) {
-    const action = status ? "BAN" : "UNBAN";
-    if(confirm(`${action} this user?`)) {
-        db.collection("users").doc(uid).update({ banned: status });
-    }
-}
-
-function editBal(uid) {
-    const a = prompt("Add Amount (Use - to cut):");
-    if(a) {
-        db.collection("users").doc(uid).get().then(doc => {
-            const nb = (doc.data().balance || 0) + parseInt(a);
-            db.collection("users").doc(uid).update({ balance: nb });
-            alert("Updated");
-        });
-    }
-}
-
-// --- PRODUCTS ---
-function addProd() {
-    const t = document.getElementById('p-t').value;
-    const p = parseInt(document.getElementById('p-p').value);
-    const i = document.getElementById('p-i').value;
-    if(t && p) {
-        db.collection("products").add({ title:t, price:p, img:i });
-        alert("Added");
-    }
-}
-function delProd(id) { if(confirm("Del?")) db.collection("products").doc(id).delete(); }
-
-// --- POSTER ---
-function savePoster(state) {
-    const i = document.getElementById('po-img').value;
-    const l = document.getElementById('po-lnk').value;
-    db.collection("settings").doc("promo").set({
-        active: state, img: i, link: l
-    }).then(() => alert("Poster Updated"));
-}
-
-// --- CHAT REPLY ---
-function openChat(uid) {
-    document.getElementById('mod-action').style.display = 'flex';
-    document.getElementById('v-del').style.display = 'none';
-    document.getElementById('v-chat').style.display = 'block';
-    document.getElementById('ac-uid').value = uid;
-
-    const box = document.getElementById('chat-hist');
-    if(chatSub) chatSub();
-
-    chatSub = db.collection("chats").doc(uid).collection("messages").orderBy("time").onSnapshot(snap => {
-        box.innerHTML = "";
-        snap.forEach(doc => {
-            const m = doc.data();
-            const col = m.sender === 'admin' ? '#06b6d4' : '#fff';
-            box.innerHTML += `<div style="color:${col}; margin-bottom:5px;"><b>${m.sender}:</b> ${m.msg}</div>`;
-        });
-        box.scrollTop = box.scrollHeight;
-    });
-}
-
-function doReply() {
-    const uid = document.getElementById('ac-uid').value;
-    const txt = document.getElementById('c-rep').value;
-    if(!txt) return;
-
-    db.collection("chats").doc(uid).collection("messages").add({
-        sender: 'admin', msg: txt, time: Date.now()
-    });
-    document.getElementById('c-rep').value = "";
-    sendNotif(uid, "Admin Reply", "New message from support.");
-}
-
-// --- EXTRAS ---
-function sendBroad() {
-    const t = document.getElementById('br-t').value;
-    const m = document.getElementById('br-m').value;
-    if(t) {
-        db.collection("notifications").add({ target: 'all', title:t, msg:m, time:Date.now() });
-        alert("Sent");
-    }
-}
-
-function sendNotif(uid, t, m) {
-    db.collection("notifications").add({ target:uid, title:t, msg:m, time:Date.now() });
-}
-
-function filterUser() {
-    // Basic Client Side Filter (Note: For large DB, use Firestore Query)
-    const q = document.getElementById('search-u').value.toLowerCase();
-    const rows = document.getElementById('list-users').children;
-    for(let r of rows) {
-        r.style.display = r.innerText.toLowerCase().includes(q) ? 'flex' : 'none';
-    }
-}
+window.onload = () => AdminApp.init();
